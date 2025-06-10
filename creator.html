@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <!-- Crucial for responsiveness and respecting device UI -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>FlexiPlan - Workout Creator</title>
+    <style>
+      :root {
+      --primary-color: #6a11cb;
+      --secondary-color: #2575fc;
+      --accent-color: #00ff9d;
+      --bg-color: #121212; /* Darker than index for variety */
+      --surface-color: #1e1e1e; /* Darker than index */
+      --text-color: #e0e0e0;
+      --text-muted: #a0a0a0;
+      --border-color: #333; /* Darker border */
+      --danger-color: #ff4d4f;
+      --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        /* Safe area insets with fallbacks */
+        --sai-top: env(safe-area-inset-top, 0px);
+        --sai-right: env(safe-area-inset-right, 0px);
+        --sai-bottom: env(safe-area-inset-bottom, 0px);
+        --sai-left: env(safe-area-inset-left, 0px);
+    }
+
+    /* Basic Reset and Box Sizing */
+    *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    html {
+        font-size: 100%; /* Approx 16px, good base for rem units and iOS input zoom */
+        scroll-behavior: smooth;
+    }
+
+    body {
+        font-family: var(--font-family);
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        line-height: 1.6;
+        padding-top: var(--sai-top);
+        /* Left/Right padding handled by .container */
+        /* Bottom padding potentially by toast or if a fixed footer existed */
+        overflow-x: hidden;
+        min-height: 100vh;
+        min-height: 100dvh; /* Better for dynamic toolbars */
+    }
+
+    .container {
+        max-width: 1200px;
+        margin: 20px auto; /* Top/bottom margin */
+        padding: 20px;
+        padding-left: calc(20px + var(--sai-left));
+        padding-right: calc(20px + var(--sai-right));
+        /* background-color: var(--surface-color); /* Sections have their own bg */
+    }
+
+    header {
+        text-align: center;
+        margin-bottom: 25px;
+        border-bottom: 2px solid;
+        border-image: linear-gradient(to right, var(--primary-color), var(--secondary-color)) 1;
+        padding-bottom: 15px;
+    }
+
+    header h1 {
+        font-size: 2.2em; /* Using em */
+        letter-spacing: 1px;
+        background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        animation: fadeInDown 0.8s ease-out;
+    }
+    
+    .nav-link {
+        display: inline-block;
+        margin-bottom: 20px; /* Reduced slightly */
+        padding: 0.7em 1.2em; /* Use em */
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        font-size: 0.9rem; /* Use rem */
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .nav-link:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(0, 255, 157, 0.2);
+    }
+
+    .creator-layout {
+        display: flex;
+        gap: 20px; /* Reduced gap */
+        flex-wrap: wrap; 
+    }
+
+    .workout-form-section, .workout-library-section, .view-workout-section {
+        background-color: var(--surface-color);
+        border-radius: 8px;
+        padding: 20px; /* Slightly reduced padding */
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        animation: fadeInUp 0.5s ease-out forwards;
+    }
+
+    .workout-form-section {
+        flex: 1 1 380px; /* flex-grow, flex-shrink, flex-basis */
+    }
+
+    .workout-library-section {
+        flex: 1 1 320px; /* flex-grow, flex-shrink, flex-basis */
+    }
+    
+    .workout-form-section h2, .workout-library-section h2, .view-workout-section h2 {
+        color: var(--accent-color);
+        margin-bottom: 18px;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 8px;
+        font-size: 1.3rem;
+    }
+    .workout-form-section h3 {
+         color: var(--text-muted);
+         font-size: 1rem;
+         margin-top: 15px;
+         margin-bottom: 10px;
+    }
+
+
+    .form-group { margin-bottom: 15px; } /* Reduced margin */
+    .form-group label { display: block; margin-bottom: 6px; color: var(--text-muted); font-size: 0.9rem; }
+    
+    /* Ensure inputs are at least 16px to prevent iOS zoom */
+    .form-group input, .form-group select {
+        width: 100%;
+        padding: 10px;
+        background-color: var(--bg-color);
+        border: 1px solid var(--border-color);
+        border-radius: 5px;
+        color: var(--text-color);
+        font-size: 1rem; /* Key for iOS zoom prevention */
+        line-height: 1.4;
+    }
+    .form-group input:focus, .form-group select:focus {
+        outline: none;
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 2px rgba(0, 255, 157, 0.3);
+    }
+
+    .action-button {
+        padding: 0.7em 1.2em; /* Use em */
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 0.95rem; /* Use rem */
+        text-decoration: none;
+        display: inline-block;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        margin-top: 10px;
+        text-align: center;
+    }
+    .action-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(0, 255, 157, 0.2);
+    }
+    .danger-button {
+        background: var(--danger-color);
+    }
+    .danger-button:hover {
+         box-shadow: 0 4px 10px rgba(255, 77, 79, 0.3);
+    }
+
+    #currentWorkoutExercises, #savedWorkoutsList {
+        list-style: none; 
+        padding-left: 0; 
+        margin-top:10px; 
+        max-height: 250px; /* Increased slightly */
+        overflow-y:auto;
+        -webkit-overflow-scrolling: touch; /* Smoother iOS scroll */
+    }
+    #currentWorkoutExercises li, #savedWorkoutsList li {
+        background-color: rgba(255, 255, 255, 0.05);
+        padding: 10px; /* Adjusted padding */
+        margin-bottom: 8px;
+        border-radius: 5px;
+        border-left: 3px solid var(--secondary-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.9rem; /* Use rem */
+    }
+    #savedWorkoutsList li {
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    #savedWorkoutsList li:hover {
+        background-color: rgba(0, 255, 157, 0.1);
+    }
+    
+    .delete-btn-small {
+        background-color: transparent;
+        color: var(--danger-color);
+        border: 1px solid var(--danger-color);
+        border-radius: 50%;
+        width: 30px; /* Increased size */
+        height: 30px; /* Increased size */
+        font-size: 0.9rem; /* Use rem */
+        cursor: pointer;
+        transition: background-color 0.2s, color 0.2s;
+        line-height: 28px; /* Adjusted for new size */
+        text-align:center;
+        padding: 0; /* Ensure no extra padding interferes with size */
+    }
+    .delete-btn-small:hover {
+        background-color: var(--danger-color);
+        color: white;
+    }
+
+    .creator-svg-preview {
+        width: 100%;
+        min-height: 120px; /* Adjusted min height */
+        max-height: 200px; /* Adjusted max height */
+        margin-bottom: 15px;
+        background-color: rgba(0,0,0,0.2);
+        border: 1px dashed var(--border-color);
+        border-radius: 5px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+        padding: 10px;
+    }
+    .creator-svg-preview svg {
+        max-width: 90%;
+        max-height: 180px; /* Adjusted */
+        stroke: var(--accent-color);
+        fill: none;
+        stroke-width: 2px;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+    /* Generic stick figure svg styles */
+    .stick-figure-svg .head { fill: var(--accent-color); stroke: none; }
+    .stick-figure-svg .body { stroke-width: 3px; }
+    .stick-figure-svg .limbs { stroke-width: 2.5px; }
+    .stick-figure-svg .highlight { stroke: #ffeb3b; stroke-width: 3.5px; } /* Yellow highlight */
+    .stick-figure-svg .equipment { stroke: var(--text-muted); stroke-width: 2.5px; fill: var(--text-muted); }
+
+    .view-workout-section {
+        margin-top: 25px; /* Reduced margin */
+        display: none; /* Hidden by default */
+        width: 100%; /* Take full width when visible */
+    }
+    .view-workout-section .exercise-detail-item {
+        display: flex;
+        flex-wrap: wrap; /* Allow wrapping for small SVG/text areas */
+        align-items: flex-start; 
+        gap: 15px; /* Reduced gap */
+        padding: 12px; /* Reduced padding */
+        background-color: rgba(255,255,255,0.03);
+        border-radius: 5px;
+        margin-bottom: 12px; /* Reduced margin */
+    }
+    .view-workout-section .exercise-detail-svg {
+        width: 100px; /* Adjusted size */
+        height: 100px; /* Adjusted size */
+        flex-shrink: 0;
+        background-color: rgba(0,0,0,0.1);
+        border: 1px dashed var(--border-color);
+        border-radius: 5px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+     .view-workout-section .exercise-detail-svg svg {
+        max-width: 90px; /* Adjusted size */
+        max-height: 90px; /* Adjusted size */
+    }
+    .view-workout-section .exercise-detail-info {
+        flex-grow: 1; /* Allow text to take remaining space */
+    }
+    .view-workout-section .exercise-detail-info strong {
+        color: var(--accent-color);
+        font-size: 1.05rem; /* Adjusted font size */
+    }
+    .view-workout-section .exercise-detail-info p {
+        font-size: 0.85rem; /* Adjusted font size */
+        color: var(--text-muted);
+    }
+
+
+    /* Animations */
+    @keyframes fadeInDown {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Toast (similar to index.html toast) */
+    .toast {
+        position: fixed;
+        bottom: calc(20px + var(--sai-bottom)); /* Respect safe area bottom */
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: var(--accent-color);
+        color: var(--bg-color);
+        padding: 12px 22px;
+        border-radius: 6px;
+        box-shadow: 0 3px 12px rgba(0,0,0,0.3);
+        z-index: 2000;
+        opacity: 0;
+        transition: opacity 0.3s ease, bottom 0.3s ease;
+        font-weight: bold;
+        font-size: 0.9rem;
+        text-align: center;
+        visibility: hidden; /* Start hidden */
+        /* Accessibility attributes are in the HTML element */
+    }
+    .toast.show { 
+        opacity: 1; 
+        visibility: visible;
+        /* bottom is already set with calc for dynamic toolbars */
+    }
+    
+    /* Media query for smaller screens */
+    @media (max-width: 768px) { /* Slightly larger breakpoint for creator layout */
+        .creator-layout {
+            flex-direction: column; /* Stack sections vertically */
+        }
+        .workout-form-section, .workout-library-section {
+            flex-basis: auto; /* Reset flex-basis when stacked */
+            min-width: 0; /* Allow full width */
+        }
+    }
+
+    @media (max-width: 600px) {
+        header h1 {
+            font-size: 1.8em;
+        }
+        .container {
+            margin: 10px auto;
+            padding: 15px;
+            padding-left: calc(15px + var(--sai-left));
+            padding-right: calc(15px + var(--sai-right));
+        }
+         .workout-form-section h2, .workout-library-section h2, .view-workout-section h2 {
+            font-size: 1.2rem;
+        }
+        .action-button, .nav-link {
+            font-size: 0.9rem; /* Consistent button font size */
+            padding: 0.6em 1em;
+        }
+        .form-group input, .form-group select {
+            /* font-size 1rem already set, good */
+            padding: 8px; /* Slightly smaller padding */
+        }
+        .view-workout-section .exercise-detail-item {
+            gap: 10px;
+        }
+        .view-workout-section .exercise-detail-svg {
+             width: 80px; height: 80px;
+        }
+        .view-workout-section .exercise-detail-svg svg {
+             max-width: 70px; max-height: 70px;
+        }
+    }
+
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+<h1>Workout Creator & Library</h1>
+</header>
+<a href="index.html" class="nav-link">Back to Daily Schedule</a>
+<div class="creator-layout">
+        <div class="workout-form-section">
+            <h2>Create New Workout</h2>
+            <form id="createWorkoutForm">
+                <div class="form-group">
+                    <label for="workoutName">Workout Name</label>
+                    <input type="text" id="workoutName" placeholder="e.g., Full Body Blast, Leg Day" required>
+                </div>
+
+                <h3>Add Exercises to Workout:</h3>
+                <div class="form-group">
+                    <label for="exerciseSelect">Exercise</label>
+                    <select id="exerciseSelect">
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+                
+                <div class="creator-svg-preview" id="creatorSvgPreview">
+                    Select an exercise to see preview.
+                </div>
+
+                <div class="form-group">
+                    <label for="exerciseSets">Sets</label>
+                    <input type="number" id="exerciseSets" min="1" value="3">
+                </div>
+                <div class="form-group">
+                    <label for="exerciseReps">Reps</label>
+                    <input type="text" id="exerciseReps" placeholder="e.g., 8-12 or 15" value="10">
+                </div>
+                <div class="form-group">
+                    <label for="exerciseRest">Rest (seconds)</label>
+                    <input type="number" id="exerciseRest" min="0" step="15" value="60">
+                </div>
+                <button type="button" class="action-button" id="addExerciseToWorkoutBtn">Add Exercise</button> <!-- Shorter text -->
+            
+                <h3>Current Workout Exercises:</h3>
+                <ul id="currentWorkoutExercises">
+                    <!-- Dynamically added exercises -->
+                </ul>
+                <button type="submit" class="action-button" style="margin-top: 20px; width:100%; padding: 12px;">Save Workout Routine</button>
+            </form>
+        </div>
+
+        <div class="workout-library-section">
+            <h2>Workout Library</h2>
+            <ul id="savedWorkoutsList">
+                <!-- List of saved workouts -->
+            </ul>
+            <p id="noWorkoutsMsg" style="color: var(--text-muted); display:none;">No workouts saved yet. Create one!</p>
+        </div>
+    </div>
+
+    <div class="view-workout-section" id="viewWorkoutSection">
+        <h2 id="viewWorkoutName"></h2>
+        <div id="viewWorkoutExercisesList">
+            <!-- Detailed exercises of the selected workout -->
+        </div>
+        <button type="button" class="action-button" id="closeViewWorkoutBtn">Close View</button>
+    </div>
+</div> <!-- End of .container -->
+
+<!-- Toast notification element - placed outside .container for proper fixed positioning over all content -->
+<div class="toast" id="toastNotification" role="alert" aria-live="assertive"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // --- UI Elements ---
+    const workoutNameInput = document.getElementById('workoutName');
+    const exerciseSelect = document.getElementById('exerciseSelect');
+    const creatorSvgPreview = document.getElementById('creatorSvgPreview');
+    const exerciseSetsInput = document.getElementById('exerciseSets');
+    const exerciseRepsInput = document.getElementById('exerciseReps');
+    const exerciseRestInput = document.getElementById('exerciseRest');
+    const addExerciseToWorkoutBtn = document.getElementById('addExerciseToWorkoutBtn');
+    const currentWorkoutExercisesList = document.getElementById('currentWorkoutExercises');
+    const createWorkoutForm = document.getElementById('createWorkoutForm');
+    
+    const savedWorkoutsListUI = document.getElementById('savedWorkoutsList');
+    const noWorkoutsMsg = document.getElementById('noWorkoutsMsg');
+
+    const viewWorkoutSection = document.getElementById('viewWorkoutSection');
+    const viewWorkoutNameUI = document.getElementById('viewWorkoutName');
+    const viewWorkoutExercisesListUI = document.getElementById('viewWorkoutExercisesList');
+    const closeViewWorkoutBtn = document.getElementById('closeViewWorkoutBtn');
+    
+    const toastNotification = document.getElementById('toastNotification');
+
+    // --- State ---
+    let currentWorkout = { name: "", exercises: [] }; // { name, svgKey, sets, reps, rest }
+    let savedWorkouts = []; // Array of workout objects { id, name, exercises: [] }
+
+    // --- EXPANDED Exercise Definitions with SVGs (same as before) ---
+    const exercisesWithSvgs = {
+        "Push-up": `
+            <svg viewBox="0 0 100 100" class="stick-figure-svg">
+                <title>Push-up</title>
+                <circle class="head" cx="50" cy="20" r="8"/>
+                <line class="body" x1="50" y1="28" x2="50" y2="60"/>
+                <line class="limbs highlight" x1="50" y1="35" x2="30" y2="50"/> <line class="limbs highlight" x1="30" y1="50" x2="20" y2="70"/>
+                <line class="limbs highlight" x1="50" y1="35" x2="70" y2="50"/> <line class="limbs highlight" x1="70" y1="50" x2="80" y2="70"/>
+                <line class="limbs" x1="50" y1="60" x2="35" y2="80"/> <line class="limbs" x1="50" y1="60" x2="65" y2="80"/>
+                <line x1="15" y1="70" x2="85" y2="70" stroke-width="2" />
+            </svg>`,
+        "Squat": `
+            <svg viewBox="0 0 100 100" class="stick-figure-svg">
+                <title>Squat</title>
+                <circle class="head" cx="50" cy="20" r="8"/>
+                <line class="body" x1="50" y1="28" x2="50" y2="55"/>
+                <line class="limbs" x1="50" y1="35" x2="35" y2="50"/> <line class="limbs" x1="50" y1="35" x2="65" y2="50"/>
+                <line class="limbs highlight" x1="50" y1="55" x2="35" y2="70"/> <line class="limbs highlight" x1="35" y1="70" x2="30" y2="90"/>
+                <line class="limbs highlight" x1="50" y1="55" x2="65" y2="70"/> <line class="limbs highlight" x1="65" y1="70" x2="70" y2="90"/>
+            </svg>`,
+        "Bicep Curl (Dumbbell)": `
+            <svg viewBox="0 0 100 100" class="stick-figure-svg">
+                <title>Bicep Curl</title>
+                <circle class="head" cx="50" cy="20" r="8"/> <line class="body" x1="50" y1="28" x2="50" y2="70"/>
+                <line class="limbs highlight" x1="50" y1="40" x2="30" y2="50"/> <!-- Upper Arm -->
+                <line class="limbs highlight" x1="30" y1="50" x2="40" y2="35"/> <!-- Forearm -->
+                <rect class="equipment" x="38" y="28" width="6" height="10" rx="2" /> <!-- Dumbbell -->
+                <line class="limbs" x1="50" y1="40" x2="70" y2="60"/> <line class="limbs" x1="50" y1="70" x2="40" y2="90"/> <line class="limbs" x1="50" y1="70" x2="60" y2="90"/>
+            </svg>`,
+        "Plank": `
+            <svg viewBox="0 0 100 100" class="stick-figure-svg">
+                <title>Plank</title>
+                <circle class="head" cx="20" cy="50" r="6"/> <line class="body highlight" x1="25" y1="50" x2="70" y2="50"/>
+                <line class="limbs" x1="30" y1="50" x2="30" y2="65"/> <line class="limbs" x1="40" y1="50" x2="40" y2="65"/>
+                <line class="limbs" x1="70" y1="50" x2="80" y2="60"/> <line class="limbs" x1="70" y1="50" x2="80" y2="40"/>
+                <line x1="25" y1="65" x2="85" y2="65" stroke-width="2" />
+            </svg>`,
+        "Jumping Jacks": `
+            <svg viewBox="0 0 100 100" class="stick-figure-svg">
+                <title>Jumping Jacks</title>
+                <circle class="head" cx="50" cy="20" r="8"/> <line class="body" x1="50" y1="28" x2="50" y2="60"/>
+                <line class="limbs highlight" x1="50" y1="35" x2="30" y2="15"/> <line class="limbs highlight" x1="50" y1="35" x2="70" y2="15"/>
+                <line class="limbs highlight" x1="50" y1="60" x2="30" y2="85"/> <line class="limbs highlight" x1="50" y1="60" x2="70" y2="85"/>
+            </svg>`,
+        "Lunges": `
+            <svg viewBox="0 0 100 100" class="stick-figure-svg">
+                <title>Lunges</title>
+                <circle class="head" cx="40" cy="25" r="7"/> <line class="body" x1="40" y1="32" x2="40" y2="55"/>
+                <line class="limbs" x1="40" y1="40" x2="30" y2="55"/> <line class="limbs" x1="40" y1="40" x2="50" y2="55"/>
+                <line class="limbs highlight" x1="40" y1="55" x2="30" y2="70"/> <line class="limbs highlight" x1="30" y1="70" x2="25" y2="85"/> <!-- Front Leg -->
+                <line class="limbs highlight" x1="40" y1="55" x2="60" y2="65"/> <line class="limbs highlight" x1="60" y1="65" x2="70" y2="80"/> <!-- Back Leg -->
+            </svg>`,
+        "Overhead Press (Barbell)": `
+            <svg viewBox="0 0 100 100" class="stick-figure-svg">
+                <title>Overhead Press</title>
+                <circle class="head" cx="50" cy="30" r="8"/> <line class="body" x1="50" y1="38" x2="50" y2="70"/>
+                <line class="limbs highlight" x1="50" y1="45" x2="35" y2="25"/> <line class="limbs highlight" x1="50" y1="45" x2="65" y2="25"/> <!-- Arms -->
+                <line class="equipment" x1="25" y1="20" x2="75" y2="20" stroke-width="5"/> <!-- Barbell -->
+                <line class="limbs" x1="50" y1="70" x2="40" y2="90"/> <line class="limbs" x1="50" y1="70" x2="60" y2="90"/>
+            </svg>`,
+        "Deadlift (Barbell)": `
+             <svg viewBox="0 0 100 100" class="stick-figure-svg">
+                <title>Deadlift</title>
+                <circle class="head" cx="50" cy="30" r="8"/>
+                <line class="body highlight" x1="50" y1="38" x2="50" y2="65"/> <!-- Back/Core -->
+                <line class="limbs" x1="50" y1="45" x2="45" y2="75"/> <!-- Arm 1 straight down -->
+                <line class="limbs" x1="50" y1="45" x2="55" y2="75"/> <!-- Arm 2 straight down -->
+                <line class="equipment" x1="35" y1="78" x2="65" y2="78" stroke-width="5"/> <!-- Barbell on ground -->
+                <line class="limbs highlight" x1="50" y1="65" x2="40" y2="80"/> <!-- Leg 1 -->
+                <line class="limbs highlight" x1="50" y1="65" x2="60" y2="80"/> <!-- Leg 2 -->
+             </svg>`,
+        "Bench Press (Barbell)": `
+            <svg viewBox="0 0 100 100" class="stick-figure-svg">
+                <title>Bench Press</title>
+                <rect x="15" y="60" width="70" height="10" class="equipment" fill="var(--text-muted)"/> <!-- Bench -->
+                <circle class="head" cx="50" cy="50" r="7" />
+                <line class="body" x1="50" y1="57" x2="50" y2="60"/> 
+                <line class="limbs highlight" x1="50" y1="50" x2="35" y2="35"/> <line class="limbs highlight" x1="50" y1="50" x2="65" y2="35"/> <!-- Arms pushing up -->
+                <line class="equipment" x1="25" y1="30" x2="75" y2="30" stroke-width="5"/> <!-- Barbell -->
+            </svg>`,
+        "Pull-up": `
+            <svg viewBox="0 0 100 100" class="stick-figure-svg">
+                <title>Pull-up</title>
+                <line class="equipment" x1="20" y1="15" x2="80" y2="15" stroke-width="4"/> <!-- Bar -->
+                <circle class="head" cx="50" cy="30" r="8"/>
+                <line class="body highlight" x1="50" y1="38" x2="50" y2="60"/> <!-- Back/Lats -->
+                <line class="limbs highlight" x1="50" y1="40" x2="35" y2="20"/> <!-- Arm 1 pulling -->
+                <line class="limbs highlight" x1="50" y1="40" x2="65" y2="20"/> <!-- Arm 2 pulling -->
+                <line class="limbs" x1="50" y1="60" x2="45" y2="80"/> <line class="limbs" x1="50" y1="60" x2="55" y2="80"/>
+            </svg>`,
+         "Leg Press": `
+            <svg viewBox="0 0 100 100" class="stick-figure-svg">
+                <title>Leg Press</title>
+                <rect x="5" y="60" width="30" height="30" class="equipment" fill="var(--surface-color)" stroke="var(--text-muted)" /> <!-- Seat back -->
+                <rect x="30" y="80" width="30" height="10" class="equipment" fill="var(--surface-color)" stroke="var(--text-muted)" /> <!-- Seat bottom -->
+                <circle class="head" cx="25" cy="50" r="6"/>
+                <line class="body" x1="25" y1="56" x2="35" y2="75"/> <!-- Torso -->
+                <line class="limbs highlight" x1="35" y1="75" x2="60" y2="60"/> <!-- Upper leg -->
+                <line class="limbs highlight" x1="60" y1="60" x2="70" y2="45"/> <!-- Lower leg -->
+                <rect x="68" y="35" width="20" height="20" class="equipment" fill="var(--text-muted)" /> <!-- Foot plate -->
+            </svg>`,
+        "Crunches": `
+             <svg viewBox="0 0 100 100" class="stick-figure-svg">
+                <title>Crunches</title>
+                <circle class="head" cx="30" cy="40" r="8"/>
+                <path class="body highlight" d="M35,48 Q45,35 60,45 L70,65 Q60,80 45,75 Z" /> <!-- Curled torso -->
+                <line class="limbs" x1="25" y1="38" x2="35" y2="30"/> <!-- Arms towards head (optional) -->
+                <line class="limbs" x1="70" y1="65" x2="80" y2="75" /> <line class="limbs" x1="80" y1="75" x2="75" y2="90" /> <!-- Bent legs -->
+             </svg>`
+    };
+
+    function populateExerciseCreatorSelect() {
+        exerciseSelect.innerHTML = '<option value="">-- Select Exercise --</option>';
+        for (const name in exercisesWithSvgs) {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            exerciseSelect.appendChild(option);
+        }
+    }
+
+    exerciseSelect.addEventListener('change', (e) => {
+        const selectedExerciseKey = e.target.value;
+        if (exercisesWithSvgs[selectedExerciseKey]) {
+            creatorSvgPreview.innerHTML = exercisesWithSvgs[selectedExerciseKey];
+        } else {
+            creatorSvgPreview.innerHTML = 'Select an exercise to see preview.';
+        }
+    });
+
+    // --- Workout Creation Logic ---
+    function renderCurrentWorkoutList() {
+        currentWorkoutExercisesList.innerHTML = '';
+        currentWorkout.exercises.forEach((ex, index) => {
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <span style="flex-grow:1; margin-right: 10px;"><strong>${ex.name}</strong><br><small>${ex.sets} sets, ${ex.reps} reps, ${ex.rest}s rest</small></span>
+                <button class="delete-btn-small" data-index="${index}" title="Remove exercise">×</button>
+            `;
+            li.querySelector('.delete-btn-small').addEventListener('click', () => {
+                currentWorkout.exercises.splice(index, 1);
+                renderCurrentWorkoutList();
+            });
+            currentWorkoutExercisesList.appendChild(li);
+        });
+    }
+
+    addExerciseToWorkoutBtn.addEventListener('click', () => {
+        const name = exerciseSelect.value;
+        const sets = exerciseSetsInput.value;
+        const reps = exerciseRepsInput.value;
+        const rest = exerciseRestInput.value;
+
+        if (!name) {
+            showToast("Please select an exercise.", true);
+            return;
+        }
+        if (!sets || !reps || !rest) {
+            showToast("Please fill in sets, reps, and rest.", true);
+            return;
+        }
+        
+        currentWorkout.exercises.push({ 
+            name, 
+            svgKey: name, 
+            sets, 
+            reps, 
+            rest 
+        });
+        renderCurrentWorkoutList();
+        showToast("Exercise added to current workout.");
+    });
+
+    createWorkoutForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const workoutName = workoutNameInput.value.trim();
+        if (!workoutName) {
+            showToast("Please enter a name for your workout.", true);
+            return;
+        }
+        if (currentWorkout.exercises.length === 0) {
+            showToast("Please add at least one exercise to the workout.", true);
+            return;
+        }
+
+        savedWorkouts.push({
+            id: Date.now().toString(), // Simple unique ID
+            name: workoutName,
+            exercises: [...currentWorkout.exercises] 
+        });
+        
+        saveWorkoutsToStorage();
+        renderSavedWorkoutsList();
+        
+        workoutNameInput.value = '';
+        currentWorkout.exercises = [];
+        renderCurrentWorkoutList();
+        exerciseSelect.value = "";
+        creatorSvgPreview.innerHTML = 'Select an exercise to see preview.';
+        exerciseSetsInput.value = "3";
+        exerciseRepsInput.value = "10";
+        exerciseRestInput.value = "60";
+        showToast(`Workout "${workoutName}" saved!`);
+    });
+
+    // --- Workout Library Logic ---
+    function renderSavedWorkoutsList() {
+        savedWorkoutsListUI.innerHTML = '';
+        if (savedWorkouts.length === 0) {
+            noWorkoutsMsg.style.display = 'block';
+            return;
+        }
+        noWorkoutsMsg.style.display = 'none';
+
+        savedWorkouts.forEach(workout => {
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <span style="flex-grow:1; margin-right: 10px;">${workout.name} <small>(${workout.exercises.length} exercises)</small></span>
+                <div>
+                    <button class="delete-btn-small delete-workout-btn" data-id="${workout.id}" title="Delete workout">×</button>
+                </div>
+            `;
+            // Add click listener to the li, but ignore clicks on the delete button itself for this specific action
+            li.addEventListener('click', (e) => {
+                if (e.target.classList.contains('delete-workout-btn') || e.target.parentElement.classList.contains('delete-workout-btn')) {
+                    // handled by its own event listener to prevent double action
+                    return;
+                }
+                displayWorkoutDetails(workout);
+            });
+            li.querySelector('.delete-workout-btn').addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent li click event from firing
+                deleteWorkout(workout.id);
+            });
+            savedWorkoutsListUI.appendChild(li);
+        });
+    }
+    
+    function displayWorkoutDetails(workout) {
+        viewWorkoutNameUI.textContent = workout.name;
+        viewWorkoutExercisesListUI.innerHTML = '';
+        workout.exercises.forEach(ex => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'exercise-detail-item';
+            itemDiv.innerHTML = `
+                <div class="exercise-detail-svg">
+                    ${exercisesWithSvgs[ex.svgKey] || '<!-- No SVG -->'}
+                </div>
+                <div class="exercise-detail-info">
+                    <strong>${ex.name}</strong>
+                    <p>${ex.sets} sets, ${ex.reps} reps, ${ex.rest}s rest</p>
+                </div>
+            `;
+            viewWorkoutExercisesListUI.appendChild(itemDiv);
+        });
+        viewWorkoutSection.style.display = 'block';
+        viewWorkoutSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    closeViewWorkoutBtn.addEventListener('click', () => {
+        viewWorkoutSection.style.display = 'none';
+    });
+
+    function deleteWorkout(workoutId) {
+        // Check if the workout is currently assigned to any day in the schedule
+        let isAssigned = false;
+        const dailyScheduleRaw = localStorage.getItem('dailyFlexiPlanSchedule');
+        if (dailyScheduleRaw) {
+            const dailySchedule = JSON.parse(dailyScheduleRaw);
+            for (const day in dailySchedule) {
+                if (dailySchedule[day].templateId === workoutId) {
+                    isAssigned = true;
+                    break;
+                }
+            }
+        }
+
+        let confirmMessage = "Are you sure you want to delete this workout routine?";
+        if (isAssigned) {
+            confirmMessage += "\n\nWarning: This workout is currently assigned to one or more days in your schedule. Deleting it will remove it from the library, but you'll need to manually update those days in the schedule page if you want to replace it.";
+        }
+
+
+        if (confirm(confirmMessage)) {
+            savedWorkouts = savedWorkouts.filter(w => w.id !== workoutId);
+            saveWorkoutsToStorage();
+            renderSavedWorkoutsList();
+            
+            // If the currently viewed workout is the one deleted, hide the view section
+            if (viewWorkoutSection.style.display === 'block') {
+                // Check if the workout being viewed is the one that was deleted.
+                // This comparison should be based on ID if possible, but workout.name is used for display.
+                // A safer check is to see if the workout by ID still exists in savedWorkouts.
+                const stillExists = savedWorkouts.some(w => w.name === viewWorkoutNameUI.textContent); // Simple check by name
+                if (!stillExists) { // Or more robustly, if you store viewedWorkoutId, check against that.
+                     viewWorkoutSection.style.display = 'none';
+                }
+            }
+            showToast("Workout deleted.");
+        }
+    }
+
+    // --- Persistence (LocalStorage for Workouts) ---
+    function saveWorkoutsToStorage() {
+        localStorage.setItem('customWorkouts', JSON.stringify(savedWorkouts));
+    }
+
+    function loadWorkoutsFromStorage() {
+        const storedWorkouts = localStorage.getItem('customWorkouts');
+        if (storedWorkouts) {
+            savedWorkouts = JSON.parse(storedWorkouts);
+        }
+    }
+    
+    // --- Toast Notification ---
+    let toastTimeout;
+    function showToast(message, isError = false) {
+        clearTimeout(toastTimeout);
+        toastNotification.textContent = message;
+        toastNotification.style.backgroundColor = isError ? 'var(--danger-color)' : 'var(--accent-color)';
+        toastNotification.style.color = isError ? 'white' : 'var(--bg-color)'; // Ensure contrast for error
+        toastNotification.classList.add('show');
+        
+        toastTimeout = setTimeout(() => {
+            toastNotification.classList.remove('show');
+        }, 3000);
+    }
+
+    // --- Initialization ---
+    populateExerciseCreatorSelect();
+    loadWorkoutsFromStorage();
+    renderSavedWorkoutsList();
+    // Accessibility attributes for toast are already in the HTML.
+});
+</script>
+</body>
+</html>
