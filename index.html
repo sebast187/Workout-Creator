@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- Crucial for responsiveness and respecting device UI -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>FlexiPlan - Daily Workout Schedule</title>
+    <style>
+        :root {
+            --primary-color: #6a11cb;
+            --secondary-color: #2575fc;
+            --accent-color: #00ff9d;
+            --bg-color: #1f1f1f;
+            --surface-color: #2a2a2a;
+            --text-color: #e0e0e0;
+            --text-muted: #a0a0a0;
+            --border-color: #444;
+            --danger-color: #ff4d4f;
+            --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+
+            /* Safe area insets with fallbacks */
+            --sai-top: env(safe-area-inset-top, 0px);
+            --sai-right: env(safe-area-inset-right, 0px);
+            --sai-bottom: env(safe-area-inset-bottom, 0px);
+            --sai-left: env(safe-area-inset-left, 0px);
+        }
+
+        /* Basic Reset and Box Sizing */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 100%; /* Approx 16px, good base for rem units and iOS input zoom */
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding-top: var(--sai-top); /* Respect top notch/toolbar area */
+            /* Removed left/right padding from body, will apply to container */
+            /* Bottom padding managed by specific elements like toast or fixed footers if any */
+            overflow-x: hidden; /* Prevent accidental horizontal scroll */
+            min-height: 100vh; /* Make sure body takes at least full screen height, consider dvh for dynamic toolbar scenarios */
+            min-height: 100dvh; /* dvh is better for dynamic toolbars if aiming for true full viewport height */
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 20px auto; /* Top/bottom margin */
+            padding: 20px;
+            padding-left: calc(20px + var(--sai-left)); /* Add safe area to container padding */
+            padding-right: calc(20px + var(--sai-right)); /* Add safe area to container padding */
+            background-color: var(--surface-color);
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid;
+            border-image: linear-gradient(to right, var(--primary-color), var(--secondary-color)) 1;
+            padding-bottom: 15px;
+        }
+
+        header h1 {
+            color: var(--accent-color);
+            font-size: 2em; /* Using rem/em */
+            letter-spacing: 1px;
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .controls {
+            text-align: center;
+            margin-bottom: 25px;
+            display: flex; /* For better wrapping and centering on mobile */
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .control-button, .nav-link-button {
+            padding: 0.7em 1.2em; /* Use em for padding for scalability */
+            margin: 5px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem; /* Use rem for font size */
+            text-decoration: none;
+            display: inline-block;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            text-align: center; /* Ensure text is centered if button wraps */
+        }
+        .control-button:hover, .nav-link-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 255, 157, 0.2);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Min width slightly reduced for smaller screens */
+            gap: 15px;
+        }
+
+        .day-cell {
+            background-color: var(--bg-color);
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 150px;
+        }
+
+        .day-cell h3 {
+            color: var(--accent-color);
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+
+        .day-cell .workout-details {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            flex-grow: 1;
+            overflow-y: auto;
+            max-height: 120px;
+            -webkit-overflow-scrolling: touch; /* For smoother scrolling on iOS, though often default now */
+        }
+        .day-cell .workout-details strong {
+            color: var(--text-color);
+            display: block;
+            margin-bottom: 5px;
+        }
+        .day-cell .workout-details ul {
+            list-style: disc;
+            margin-left: 20px;
+            padding-left: 0;
+            font-size: 0.9em; /* Relative to parent .workout-details */
+        }
+        .day-cell .workout-details p {
+             margin-bottom: 5px;
+        }
+
+
+        .day-cell .actions button {
+            padding: 0.5em 0.9em;
+            font-size: 0.8rem;
+            margin-right: 5px;
+            margin-top: 5px;
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .day-cell .actions button.clear-btn {
+            background-color: var(--danger-color);
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%; /* For modal background */
+            height: 100dvh; /* Better for dynamic toolbars */
+            overflow-y: auto; /* Allow modal content to scroll if it's too long */
+            -webkit-overflow-scrolling: touch;
+            background-color: rgba(0,0,0,0.75); /* Slightly darker for better contrast */
+            animation: fadeInModal 0.3s ease-out;
+            padding-top: var(--sai-top); /* Respect notch if modal content reaches top */
+            padding-bottom: var(--sai-bottom); /* Respect home indicator area */
+        }
+
+        .modal-content {
+            background-color: var(--surface-color);
+            margin: 5vh auto; /* Use vh for vertical centering margin, adjust for mobile */
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px; /* Reduced max-width slightly */
+            box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+            animation: slideInModal 0.4s ease-out;
+            /* No height setting, let content define height */
+        }
+        
+        @keyframes fadeInModal { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideInModal { from { opacity:0; transform: translateY(-30px); } to { opacity:1; transform: translateY(0); } }
+
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .modal-header h4 {
+            color: var(--accent-color);
+            margin: 0;
+            font-size: 1.25rem;
+        }
+
+        .close-btn {
+            color: var(--text-muted);
+            font-size: 1.8rem; /* Made larger for touch */
+            font-weight: bold;
+            cursor: pointer;
+            padding: 5px; /* Increase tappable area */
+            line-height: 1; /* Prevent extra space */
+            transition: color 0.2s;
+        }
+        .close-btn:hover { color: var(--accent-color); }
+
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display: block; margin-bottom: 6px; color: var(--text-muted); font-size: 0.9rem; }
+        
+        /* Ensure inputs are at least 16px to prevent iOS zoom */
+        .form-group select, .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            color: var(--text-color);
+            font-size: 1rem; /* Equivalent to 16px if html font-size is 100% */
+            line-height: 1.4; /* Better readability */
+        }
+        .form-group textarea { min-height: 90px; resize: vertical;}
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(0, 255, 157, 0.2);
+        }
+
+        .modal-actions { text-align: right; margin-top: 25px; }
+
+        /* Media query for smaller screens */
+        @media (max-width: 600px) {
+            header h1 {
+                font-size: 1.8em;
+            }
+            .container {
+                margin: 10px auto; /* Reduced margin */
+                padding: 15px;
+                padding-left: calc(15px + var(--sai-left));
+                padding-right: calc(15px + var(--sai-right));
+            }
+            .modal-content {
+                margin: 20px auto; /* Ensure some space, no full screen width unless desired */
+                width: 95%;
+            }
+            .form-group select, .form-group input, .form-group textarea {
+                /* Font size already set to 1rem (16px), should be fine */
+            }
+            .control-button, .nav-link-button {
+                font-size: 0.85rem;
+                flex-basis: 45%; /* Allow two buttons per row */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Daily Workout Schedule</h1>
+        </header>
+
+        <div class="controls">
+            <a href="creator.html" class="nav-link-button">Workout Creator/Library</a>
+            <button class="control-button" id="saveScheduleBtn">Save Schedule</button>
+        </div>
+
+        <div class="calendar-grid" id="calendarGrid">
+            <!-- Day cells will be dynamically inserted here -->
+        </div>
+    </div>
+
+    <!-- Edit/Add Workout Modal -->
+    <div id="editWorkoutModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 id="modalTitle">Edit Workout for <span id="modalDayName"></span></h4>
+                <span class="close-btn" id="closeModalBtn">&times;</span>
+            </div>
+            <form id="editWorkoutForm">
+                <input type="hidden" id="editingDay">
+                
+                <div class="form-group">
+                    <label for="workoutTemplateSelect">Assign from Library (Optional)</label>
+                    <select id="workoutTemplateSelect">
+                        <option value="">-- Custom Entry / No Template --</option>
+                        <!-- Options populated by JS -->
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="workoutTitle">Workout Title (if not using template)</label>
+                    <input type="text" id="workoutTitle" placeholder="e.g., Quick Cardio, Upper Body Focus">
+                </div>
+                
+                <div class="form-group">
+                    <label for="workoutExercisesText">Exercises (one per line, e.g., Push-ups 3x10)</label>
+                    <textarea id="workoutExercisesText" placeholder="Push-ups 3x10&#10;Squats 3x12&#10;Plank 3x60s"></textarea>
+                </div>
+                
+                <div class="modal-actions">
+                     <button type="button" class="control-button" id="cancelModalBtn" style="background: var(--text-muted); margin-right: 10px;">Cancel</button>
+                     <button type="submit" class="control-button">Save to Day</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+        let dailySchedule = {}; 
+        let customWorkoutTemplates = []; 
+
+        const calendarGrid = document.getElementById('calendarGrid');
+        const modal = document.getElementById('editWorkoutModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const cancelModalBtn = document.getElementById('cancelModalBtn');
+        const editWorkoutForm = document.getElementById('editWorkoutForm');
+        const modalDayName = document.getElementById('modalDayName');
+        const editingDayInput = document.getElementById('editingDay');
+        const workoutTemplateSelect = document.getElementById('workoutTemplateSelect');
+        const workoutTitleInput = document.getElementById('workoutTitle');
+        const workoutExercisesTextarea = document.getElementById('workoutExercisesText');
+        const saveScheduleBtn = document.getElementById('saveScheduleBtn');
+
+        function loadCustomWorkoutTemplates() {
+            const storedTemplates = localStorage.getItem('customWorkouts');
+            if (storedTemplates) {
+                customWorkoutTemplates = JSON.parse(storedTemplates);
+            } else {
+                customWorkoutTemplates = [];
+            }
+            populateTemplateSelect();
+        }
+
+        function populateTemplateSelect() {
+            workoutTemplateSelect.innerHTML = '<option value="">-- Custom Entry / No Template --</option>';
+            customWorkoutTemplates.forEach(template => {
+                if (template && template.id && template.name) {
+                    const option = document.createElement('option');
+                    option.value = template.id; 
+                    option.textContent = template.name;
+                    workoutTemplateSelect.appendChild(option);
+                }
+            });
+        }
+        
+        workoutTemplateSelect.addEventListener('change', (e) => {
+            const selectedTemplateId = e.target.value;
+            const currentDayVal = editingDayInput.value; // Cache current day value
+            const currentDayData = dailySchedule[currentDayVal] || {};
+
+            if (selectedTemplateId) {
+                const template = customWorkoutTemplates.find(t => t.id === selectedTemplateId);
+                if (template) {
+                    workoutTitleInput.value = template.name; 
+                    workoutTitleInput.disabled = true; 
+                    const exercisesText = template.exercises.map(ex => `${ex.name} ${ex.sets} sets, ${ex.reps} reps, ${ex.rest}s rest`).join('\n');
+                    workoutExercisesTextarea.value = exercisesText;
+                    workoutExercisesTextarea.disabled = true;
+                }
+            } else {
+                workoutTitleInput.value = currentDayData.title || ''; 
+                workoutTitleInput.disabled = false;
+                workoutExercisesTextarea.value = currentDayData.exercisesText || ''; 
+                workoutExercisesTextarea.disabled = false;
+            }
+        });
+
+        function renderCalendar() {
+            calendarGrid.innerHTML = '';
+            daysOfWeek.forEach(day => {
+                const dayData = dailySchedule[day] || {};
+                
+                const dayCell = document.createElement('div');
+                dayCell.className = 'day-cell';
+                dayCell.dataset.day = day;
+
+                let workoutDisplay = '<p style="font-style: italic;">No workout scheduled.</p>';
+                if (dayData.templateId && dayData.templateNameForDisplay) {
+                    workoutDisplay = `<strong>${dayData.templateNameForDisplay} (Template)</strong>`;
+                    const template = customWorkoutTemplates.find(t => t.id === dayData.templateId);
+                    if (template && template.exercises) {
+                         workoutDisplay += `<ul>`;
+                         template.exercises.slice(0, 3).forEach(ex => {
+                             workoutDisplay += `<li>${ex.name.length > 25 ? ex.name.substring(0,22)+'...' : ex.name}</li>`;
+                         });
+                         if(template.exercises.length > 3) workoutDisplay += `<li>...and more</li>`;
+                         workoutDisplay += `</ul>`;
+                    }
+                } else if (dayData.title || dayData.exercisesText) {
+                    workoutDisplay = `<strong>${dayData.title || 'Custom Workout'}</strong>`;
+                     if(dayData.exercisesText) {
+                        workoutDisplay += `<ul>${dayData.exercisesText.split('\n').slice(0,4).map(line => `<li>${line.substring(0,30)}${line.length > 30 ? '...' : ''}</li>`).join('')}</ul>`;
+                     }
+                }
+
+                dayCell.innerHTML = `
+                    <div>
+                        <h3>${day}</h3>
+                        <div class="workout-details">${workoutDisplay}</div>
+                    </div>
+                    <div class="actions">
+                        <button class="edit-workout-btn">Edit / Set</button>
+                        <button class="clear-btn clear-workout-btn" ${!dayData.title && !dayData.exercisesText && !dayData.templateId ? 'style="display:none;"' : ''}>Clear</button>
+                    </div>
+                `;
+                calendarGrid.appendChild(dayCell);
+            });
+            attachCalendarEventListeners();
+        }
+
+        function attachCalendarEventListeners() {
+            document.querySelectorAll('.edit-workout-btn').forEach(button => {
+                button.addEventListener('click', handleOpenModal);
+            });
+            document.querySelectorAll('.clear-workout-btn').forEach(button => {
+                button.addEventListener('click', handleClearWorkout);
+            });
+        }
+
+        function handleOpenModal(event) {
+            const day = event.target.closest('.day-cell').dataset.day;
+            editingDayInput.value = day;
+            modalDayName.textContent = day;
+            
+            const dayData = dailySchedule[day] || {};
+            workoutTemplateSelect.value = dayData.templateId || "";
+            
+            // Dispatch change event *after* setting the value, so it correctly enables/disables other fields
+            const changeEvent = new Event('change'); 
+            workoutTemplateSelect.dispatchEvent(changeEvent);
+            
+            // This logic is now mostly handled by the 'change' event listener on workoutTemplateSelect
+            // but keep a fallback if a templateId was stored but the template is no longer found.
+            if (!workoutTemplateSelect.value && dayData.templateId) { // Template was selected but not found
+                 workoutTitleInput.value = dayData.title || "Missing Template Data";
+                 workoutExercisesTextarea.value = dayData.exercisesText || "Please re-select or add custom.";
+                 workoutTitleInput.disabled = false;
+                 workoutExercisesTextarea.disabled = false;
+            } else if (!workoutTemplateSelect.value) { // Truly custom or new entry
+                 workoutTitleInput.value = dayData.title || "";
+                 workoutExercisesTextarea.value = dayData.exercisesText || "";
+                 workoutTitleInput.disabled = false;
+                 workoutExercisesTextarea.disabled = false;
+            }
+
+
+            modal.style.display = 'block';
+            document.body.style.overflow = 'hidden'; // Prevent body scroll when modal is open
+        }
+
+        function closeModal() {
+            modal.style.display = 'none';
+            document.body.style.overflow = ''; // Restore body scroll
+            editWorkoutForm.reset();
+            workoutTitleInput.disabled = false;
+            workoutExercisesTextarea.disabled = false;
+            // Clear specific states if needed from the form inputs for next open
+            editingDayInput.value = ""; 
+            modalDayName.textContent = "";
+            workoutTemplateSelect.value = ""; // Explicitly reset select
+        }
+
+        editWorkoutForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            const day = editingDayInput.value;
+            if (!day) { // Should not happen with current flow, but good check
+                showToast("Error: No day selected for editing.", true);
+                return;
+            }
+            const templateId = workoutTemplateSelect.value;
+            const title = workoutTitleInput.value.trim();
+            const exercisesText = workoutExercisesTextarea.value.trim();
+
+            if (templateId) {
+                const selectedTemplate = customWorkoutTemplates.find(t => t.id === templateId);
+                 dailySchedule[day] = { 
+                     templateId: templateId, 
+                     templateNameForDisplay: selectedTemplate ? selectedTemplate.name : "Selected Template",
+                     title: "", 
+                     exercisesText: ""
+                 };
+            } else if (title || exercisesText) {
+                 dailySchedule[day] = { 
+                     templateId: null, 
+                     templateNameForDisplay: "",
+                     title: title, 
+                     exercisesText: exercisesText 
+                };
+            } else { 
+                delete dailySchedule[day]; 
+            }
+            
+            saveScheduleToStorage();
+            renderCalendar();
+            closeModal();
+            showToast("Workout for " + day + " updated!");
+        });
+
+        function handleClearWorkout(event) {
+            const day = event.target.closest('.day-cell').dataset.day;
+            if (confirm(`Are you sure you want to clear the workout for ${day}?`)) {
+                delete dailySchedule[day]; 
+                saveScheduleToStorage();
+                renderCalendar();
+                showToast("Workout cleared for " + day + ".");
+            }
+        }
+        
+        function saveScheduleToStorage() {
+            localStorage.setItem('dailyFlexiPlanSchedule', JSON.stringify(dailySchedule));
+        }
+
+        function loadScheduleFromStorage() {
+            const savedSchedule = localStorage.getItem('dailyFlexiPlanSchedule');
+            if (savedSchedule) {
+                dailySchedule = JSON.parse(savedSchedule);
+            }
+            renderCalendar(); 
+        }
+
+        const toastElement = document.createElement('div');
+        function setupToast() { // Encapsulate toast setup
+            toastElement.style.position = 'fixed';
+            toastElement.style.bottom = 'calc(20px + var(--sai-bottom))'; // Respect safe area bottom
+            toastElement.style.left = '50%';
+            toastElement.style.transform = 'translateX(-50%)';
+            toastElement.style.backgroundColor = 'var(--accent-color)';
+            toastElement.style.color = 'var(--bg-color)';
+            toastElement.style.padding = '12px 22px';
+            toastElement.style.borderRadius = '6px';
+            toastElement.style.boxShadow = '0 3px 12px rgba(0,0,0,0.3)';
+            toastElement.style.zIndex = '2000';
+            toastElement.style.opacity = '0';
+            toastElement.style.transition = 'opacity 0.3s ease, bottom 0.3s ease';
+            toastElement.style.fontWeight = 'bold';
+            toastElement.style.fontSize = '0.9rem';
+            toastElement.style.textAlign = 'center'; // Good for multi-line toasts
+            toastElement.style.visibility = 'hidden'; // Start hidden
+            toastElement.setAttribute('role', 'alert'); // Accessibility
+            toastElement.setAttribute('aria-live', 'assertive'); // Accessibility
+            document.body.appendChild(toastElement);
+        }
+
+        let toastTimeout;
+        function showToast(message, isError = false) {
+            clearTimeout(toastTimeout); // Clear any existing toast timeout
+            toastElement.textContent = message;
+            toastElement.style.backgroundColor = isError ? 'var(--danger-color)' : 'var(--accent-color)';
+            toastElement.style.color = isError ? 'var(--text-color)' : 'var(--bg-color)';
+            
+            toastElement.style.visibility = 'visible';
+            toastElement.style.opacity = '1';
+            // Use bottom style as it was, or adjust if it jumps initially with calc
+            // The calc with env should place it correctly accounting for the dynamic toolbar.
+            
+            toastTimeout = setTimeout(() => {
+                toastElement.style.opacity = '0';
+                setTimeout(() => { toastElement.style.visibility = 'hidden'; }, 300); // Hide after fade
+            }, 3000);
+        }
+
+        closeModalBtn.addEventListener('click', closeModal);
+        cancelModalBtn.addEventListener('click', closeModal);
+        saveScheduleBtn.addEventListener('click', () => {
+            saveScheduleToStorage(); 
+            showToast("Schedule saved successfully!");
+        });
+
+        window.addEventListener('click', (event) => { 
+            if (event.target === modal) {
+                closeModal();
+            }
+        });
+        // Close modal with Escape key
+        window.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && modal.style.display === 'block') {
+                closeModal();
+            }
+        });
+
+
+        // --- Initialization ---
+        setupToast(); // Call setup function
+        loadCustomWorkoutTemplates(); 
+        loadScheduleFromStorage();    
+    });
+    </script>
+</body>
+</html>
